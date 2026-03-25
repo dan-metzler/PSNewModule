@@ -15,4 +15,3 @@ foreach ($moduleItem in $requiredModules) {
         Install-Module -Name $($moduleItem.ModuleName) -MinimumVersion $($moduleItem.MinimumVersion) -MaximumVersion $($moduleItem.MaximumVersion) -Scope CurrentUser -Force
     }
 }
-
