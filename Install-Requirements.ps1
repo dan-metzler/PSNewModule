@@ -1,6 +1,6 @@
 $requiredModules = @(
     @{ ModuleName = 'ModuleBuilder'; MinimumVersion = '3.1.8'; MaximumVersion = '4.999.999' }
-    @{ ModuleName = 'Pester'; MinimumVersion = '3.4.0'; MaximumVersion = '5.999.999' }
+    @{ ModuleName = 'Pester'; MinimumVersion = '5.7.0'; MaximumVersion = '5.999.999' }
     @{ ModuleName = 'InvokeBuild'; MinimumVersion = '5.14.23'; MaximumVersion = '6.999.999' }
     @{ ModuleName = 'platyPS'; MinimumVersion = '0.14.2'; MaximumVersion = '1.999.999' }
 )
