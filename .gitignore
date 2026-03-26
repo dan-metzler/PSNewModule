@@ -3,6 +3,8 @@
 !.vscode/settings.json
 .vscode/*.log
 
+CLAUDE.md
+
 # FOLDERS
 /Output
 /Dev
