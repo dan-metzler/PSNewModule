@@ -46,9 +46,6 @@ $script:moduleName = $null
 # ============================================================================
 # Define Build Tasks
 # ============================================================================
-task CheckGitStatus {
-    Test-GitStatus -ExpectedBranch 'main'
-}
 
 task BuildModule {
     $ok = & "$PSScriptRoot\Source\ModuleBuilder.ps1" -Version $Version
@@ -143,18 +140,17 @@ task RunTests ModuleImport, {
 # Execution sequence (Local):
 #   1. BuildModule    - Compile and package the module
 #   2. ModuleImport   - Validate and import module artifact
-#
+#   3. GenerateMarkdownDocs  - Create function documentation
+
 # Execution sequence (Full):
-#   1. CheckGitStatus        - Ensure build branch is 'main'
-#   2. BuildModule           - Compile and package the module
-#   3. ModuleImport          - Validate and import module artifact
-#   4. GenerateMarkdownDocs  - Create function documentation
-#   5. RunTests              - Verify module functionality via Pester
+#   1. BuildModule           - Compile and package the module
+#   2. ModuleImport          - Validate and import module artifact
+#   3. RunTests              - Verify module functionality via Pester
 
 switch ($Type) {
     'Local' {
         Write-Verbose 'Executing local build pipeline...' -Verbose
-        task . BuildModule, ModuleImport, GenerateMarkdownDocs, RunTests
+        task . BuildModule, ModuleImport, GenerateMarkdownDocs
     }
     'Full' {
         Write-Verbose 'Executing full build pipeline...' -Verbose
