@@ -8,7 +8,7 @@ Click **Use this template** on GitHub to create your own module repo from this o
 
 ## What this repo includes
 
-- `Invoke-Build` pipeline (`.build.ps1`)
+- `Invoke-Build` pipeline (`template.build.ps1`)
 - Module packaging with `ModuleBuilder` (`Source/ModuleBuilder.ps1`)
 - Pester tests (`Tests/`)
 - Markdown help generation with `platyPS` (`Docs/`)
@@ -56,13 +56,13 @@ Installs required modules using min/max version ranges:
 Run Local build (compile + import + docs):
 
 ```powershell
-.\build.ps1 -Type Local
+.\template.build.ps1 -Type Local
 ```
 
 Run Full pipeline (compile + import + tests):
 
 ```powershell
-.\build.ps1 -Type Full
+.\template.build.ps1 -Type Full
 ```
 
 Run an individual task:
