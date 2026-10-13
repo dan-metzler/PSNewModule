@@ -5,10 +5,7 @@ param(
     [string]$Type,
 
     [Parameter()]
-    [string]$Version = $(
-        $tag = git describe --tags --abbrev=0 2>$null
-        if ($tag) { $tag.TrimStart('v') } else { '0.1.0' }
-    )
+    [string]$Version
 )
 
 # Allow running this script directly (.\template.build.ps1 -Type Local) by
@@ -16,6 +13,46 @@ param(
 if ($MyInvocation.ScriptName -notlike '*Invoke-Build.ps1') {
     Invoke-Build -File $MyInvocation.MyCommand.Path @PSBoundParameters
     return
+}
+
+# ============================================================================
+# Resolve Build Version
+# ============================================================================
+# Uses the latest git tag (v1.2.3) when available, otherwise the ModuleVersion
+# in the source manifest. Invoke-Build sets $ErrorActionPreference = 'Stop',
+# which makes git's stderr terminating in Windows PowerShell 5.1, so git runs
+# with 'Continue' and any failure (no git, no repo, no tags) falls through.
+
+if (-not $Version) {
+    $versionSource = 'manifest'
+
+    if (Get-Command -Name git -ErrorAction SilentlyContinue) {
+        $previousPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $tag = git -C $PSScriptRoot describe --tags --abbrev=0 2>$null
+            $parsed = $null
+            if ($LASTEXITCODE -eq 0 -and $tag -and [version]::TryParse("$tag".TrimStart('v'), [ref]$parsed)) {
+                $Version = $parsed.ToString()
+                $versionSource = 'git tag'
+            }
+        }
+        catch { }
+        finally {
+            $ErrorActionPreference = $previousPreference
+        }
+    }
+
+    if (-not $Version) {
+        $sourceManifest = Get-ChildItem -Path "$PSScriptRoot\Source\*.psd1" | Select-Object -First 1
+        if (-not $sourceManifest) {
+            throw 'No .psd1 file found in the Source directory.'
+        }
+        $manifestData = Import-LocalizedData -BaseDirectory $sourceManifest.DirectoryName -FileName $sourceManifest.Name
+        $Version = $manifestData.ModuleVersion
+    }
+
+    Write-Verbose "Build version: $Version (source: $versionSource)" -Verbose
 }
 
 <#

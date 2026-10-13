@@ -9,7 +9,8 @@
 
 .PARAMETER Version
     The semantic version to assign to the built module. Defaults to "2.0.0" if not specified.
-    Used for versioning the module manifest during the build process.
+    template.build.ps1 always passes this, resolved from the latest git tag or the source
+    manifest's ModuleVersion.
 
 .NOTES
     - Requires the ModuleBuilder module from the PowerShell Gallery

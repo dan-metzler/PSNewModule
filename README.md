@@ -20,7 +20,7 @@ New-PSModuleProject -Name MyModule
 
 Prefer to read it first? Open [`New-PSModuleProject.ps1`](New-PSModuleProject.ps1), copy the whole file, paste it into PowerShell, then run `New-PSModuleProject -Name MyModule`.
 
-The function downloads this template, copies it to `Desktop\MyModule`, and renames everything for your module: files, manifest (new GUID, author, description), tests, docs, and the publish workflow.
+The function downloads this template, copies it to `Desktop\MyModule`, and renames everything for your module: files, manifest (new GUID, author, description), tests, docs, and the publish workflow. It then prints numbered next steps; the same steps are written to the new project's own `README.md`.
 
 | Parameter | Default | Purpose |
 |---|---|---|
@@ -30,6 +30,7 @@ The function downloads this template, copies it to `Desktop\MyModule`, and renam
 | `-Description` | `<Name> PowerShell module.` | Manifest description |
 | `-InstallRequirements` | off | Install build dependencies |
 | `-GitInit` | off | `git init` and create an initial commit |
+| `-PassThru` | off | Return the new project folder object |
 
 Then build it:
 
@@ -75,6 +76,8 @@ Build:
 .\template.build.ps1 -Type Local   # compile, import, regenerate Docs/
 .\template.build.ps1 -Type Full    # compile, import, run Pester tests
 ```
+
+The build version comes from the latest git tag (`v1.2.3`). With no git, no repo, or no tags yet, it falls back to `ModuleVersion` in `Source/<ModuleName>.psd1`. Pass `-Version 1.2.3` to override either.
 
 Run a single task:
 
