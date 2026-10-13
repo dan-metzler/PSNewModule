@@ -14,13 +14,15 @@ A minimal PowerShell module template (PowerShell 5.1+) with build, test, docs, a
 Load the `New-PSModuleProject` function, then run it to create a ready-to-build module on your Desktop:
 
 ```powershell
-Invoke-RestMethod 'https://raw.githubusercontent.com/dan-metzler/PSNewModule/main/New-PSModuleProject.ps1' | Invoke-Expression
-New-PSModuleProject -Name MyModule
+Invoke-RestMethod 'https://raw.githubusercontent.com/dan-metzler/PSNewModule/main/New-PSModuleProject.ps1' -UseDefaultCredentials | Invoke-Expression
+New-PSModuleProject -Name MyModule -InstallRequirements -GitInit
 ```
 
-Prefer to read it first? Open [`New-PSModuleProject.ps1`](New-PSModuleProject.ps1), copy the whole file, paste it into PowerShell, then run `New-PSModuleProject -Name MyModule`.
+`-UseDefaultCredentials` lets the download through authenticating corporate proxies and is harmless elsewhere. `-GitInit` is skipped with a warning if git isn't installed; the build works without it.
 
-The function downloads this template, copies it to `Desktop\MyModule`, and renames everything for your module: files, manifest (new GUID, author, description), tests, docs, and the publish workflow. It then prints numbered next steps; the same steps are written to the new project's own `README.md`.
+Prefer to read it first? Open [`New-PSModuleProject.ps1`](New-PSModuleProject.ps1), copy the whole file, paste it into PowerShell, then run the `New-PSModuleProject` line above.
+
+The function downloads this template, copies it to `Desktop\MyModule`, renames everything for your module (files, manifest with a new GUID, author and description, tests, docs, publish workflow), installs the build dependencies, and initializes git. It then prints numbered next steps; the same steps are written to the new project's own `README.md`.
 
 | Parameter | Default | Purpose |
 |---|---|---|
@@ -32,13 +34,13 @@ The function downloads this template, copies it to `Desktop\MyModule`, and renam
 | `-GitInit` | off | `git init` and create an initial commit |
 | `-PassThru` | off | Return the new project folder object |
 
-Then build it:
+Then `cd` into the folder it printed (your Desktop may be under OneDrive) and build:
 
 ```powershell
-cd ~\Desktop\MyModule
-.\Install-Requirements.ps1          # skip if you used -InstallRequirements
 .\template.build.ps1 -Type Full
 ```
+
+If the build script is blocked by execution policy, run `Set-ExecutionPolicy -Scope Process Bypass` in that window first.
 
 When you're ready to put it on GitHub, see [Moving a local project to GitHub](#moving-a-local-project-to-github).
 

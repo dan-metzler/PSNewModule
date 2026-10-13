@@ -56,10 +56,11 @@ function New-PSModuleProject {
         the project at Desktop\MyModule.
 
     .EXAMPLE
-        Invoke-RestMethod 'https://raw.githubusercontent.com/dan-metzler/PSNewModule/main/New-PSModuleProject.ps1' | Invoke-Expression
-        New-PSModuleProject -Name MyModule
+        Invoke-RestMethod 'https://raw.githubusercontent.com/dan-metzler/PSNewModule/main/New-PSModuleProject.ps1' -UseDefaultCredentials | Invoke-Expression
+        New-PSModuleProject -Name MyModule -InstallRequirements -GitInit
 
-        Loads the function straight from GitHub, then creates the project.
+        Loads the function straight from GitHub, then creates the project, installs the build
+        dependencies, and initializes git (skipped with a warning if git is not installed).
 
     .EXAMPLE
         .\New-PSModuleProject.ps1 -Name MyModule -Path C:\Code -InstallRequirements -GitInit
@@ -165,7 +166,7 @@ function New-PSModuleProject {
             $zipUri = "$templateRepo/archive/refs/heads/$Branch.zip"
             $zipPath = Join-Path -Path $tempDir -ChildPath 'template.zip'
             Write-Host "Downloading template from $zipUri"
-            Invoke-WebRequest -Uri $zipUri -OutFile $zipPath -UseBasicParsing
+            Invoke-WebRequest -Uri $zipUri -OutFile $zipPath -UseBasicParsing -UseDefaultCredentials
             Expand-Archive -Path $zipPath -DestinationPath $tempDir
 
             # GitHub zips contain a single top-level folder, e.g. PSNewModule-main
@@ -299,14 +300,40 @@ To put this project on GitHub and release versions through the included workflow
     }
 
     if ($GitInit) {
-        if (Get-Command -Name git -ErrorAction SilentlyContinue) {
-            git -C $destination init --initial-branch=main --quiet
-            git -C $destination -c core.safecrlf=false add --all
+        if (-not (Get-Command -Name git -ErrorAction SilentlyContinue)) {
+            Write-Warning 'git was not found on PATH; skipping repository initialization.'
+        }
+        else {
+            # Windows PowerShell 5.1 turns redirected native stderr into terminating errors
+            # under 'Stop', so git runs with 'Continue' and is checked via $LASTEXITCODE.
+            $previousPreference = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                # --initial-branch needs git 2.28+; older git gets a plain init, then HEAD is pointed at main.
+                git -C $destination init --initial-branch=main --quiet 2>$null
+                if ($LASTEXITCODE -ne 0) {
+                    git -C $destination init --quiet 2>$null
+                    if ($LASTEXITCODE -eq 0) { git -C $destination symbolic-ref HEAD refs/heads/main 2>$null }
+                }
+
+                # Only continue once the new folder has its own .git; otherwise git add would
+                # stage the files into an enclosing repository, if there is one.
+                $repoCreated = Test-Path -Path (Join-Path -Path $destination -ChildPath '.git')
+                if ($repoCreated) {
+                    git -C $destination -c core.safecrlf=false add --all 2>$null
+                    $gitEmail = git -C $destination config user.email
+                    $gitUser = git -C $destination config user.name
+                }
+            }
+            finally {
+                $ErrorActionPreference = $previousPreference
+            }
 
             # Without an identity git refuses to commit; say how to fix it instead of failing.
-            $gitEmail = git -C $destination config user.email
-            $gitUser = git -C $destination config user.name
-            if ($gitEmail -and $gitUser) {
+            if (-not $repoCreated) {
+                Write-Warning 'git init failed; skipping repository initialization. Run git init in the project folder manually.'
+            }
+            elseif ($gitEmail -and $gitUser) {
                 git -C $destination commit --quiet -m '[chore] initial project from PSNewModule template'
                 if ($LASTEXITCODE -ne 0) {
                     Write-Warning 'git commit failed. Files are staged; commit them manually.'
@@ -318,9 +345,6 @@ To put this project on GitHub and release versions through the included workflow
                     "  git config --global user.email 'you@example.com'`n" +
                     "  git -C '$destination' commit -m '[chore] initial commit'")
             }
-        }
-        else {
-            Write-Warning 'git was not found on PATH; skipping repository initialization.'
         }
     }
 
