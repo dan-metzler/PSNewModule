@@ -32,9 +32,4 @@ $config = New-PesterConfiguration
 $config.Run.Path = Join-Path -Path $PSScriptRoot -ChildPath 'Unit'
 $config.Output.Verbosity = 'Detailed'
 
-# Include integration tests
-$config.Run.Path = @(
-    (Join-Path -Path $PSScriptRoot -ChildPath 'Unit')
-)
-
 Invoke-Pester -Configuration $config

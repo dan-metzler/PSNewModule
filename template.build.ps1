@@ -11,6 +11,13 @@ param(
     )
 )
 
+# Allow running this script directly (.\template.build.ps1 -Type Local) by
+# re-invoking it through Invoke-Build, which defines the 'task' keyword.
+if ($MyInvocation.ScriptName -notlike '*Invoke-Build.ps1') {
+    Invoke-Build -File $MyInvocation.MyCommand.Path @PSBoundParameters
+    return
+}
+
 <#
 .SYNOPSIS
     Build orchestration script using InvokeBuild framework.
@@ -22,7 +29,7 @@ param(
 
 .NOTES
     - Requires InvokeBuild module (dependency management for task-based builds)
-    - Builds are restricted to the 'main' git branch
+    - Can be run directly or via Invoke-Build
     - Returns exit code 0 on success; non-zero on task failures
 #>
 
@@ -33,7 +40,6 @@ param(
 #Requires -Module InvokeBuild
 
 Import-Module InvokeBuild
-. "$PSScriptRoot\Build\BuildFunctions.ps1"
 
 # ============================================================================
 # Script-Scoped Variables
@@ -121,10 +127,10 @@ task RunTests ModuleImport, {
     Get-Module -Name $script:moduleName -All | Remove-Module -Force -ErrorAction SilentlyContinue
 
     $config = New-PesterConfiguration
-    $config.Run.Path = @(
-        (Join-Path -Path $PSScriptRoot -ChildPath 'Tests\Unit'),
-        (Join-Path -Path $PSScriptRoot -ChildPath 'Tests\Integration')
-    )
+    # Only pass test folders that exist; Pester errors on missing paths.
+    $config.Run.Path = @('Tests\Unit', 'Tests\Integration') |
+        ForEach-Object { Join-Path -Path $PSScriptRoot -ChildPath $_ } |
+        Where-Object { Test-Path -Path $_ -PathType Container }
     $config.Run.Exit = $true
     $config.Output.Verbosity = 'Detailed'
 
@@ -154,7 +160,7 @@ switch ($Type) {
     }
     'Full' {
         Write-Verbose 'Executing full build pipeline...' -Verbose
-        task .  BuildModule, CopyLibFiles, ModuleImport, RunTests
+        task . BuildModule, ModuleImport, RunTests
     }
     default {
         throw "Invalid build type specified. Use 'Local' or 'Full'."

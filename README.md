@@ -1,136 +1,147 @@
 # PSNewModule
 
-Minimal PowerShell module template with build, test, docs, and publish automation.
+A minimal PowerShell module template (PowerShell 5.1+) with build, test, docs, and publish automation already set up.
 
-Click **Use this template** on GitHub to create your own module repo from this one.
-
----
-
-## What this repo includes
-
-- `Invoke-Build` pipeline (`template.build.ps1`)
-- Module packaging with `ModuleBuilder` (`Source/ModuleBuilder.ps1`)
-- Pester tests (`Tests/`)
-- Markdown help generation with `platyPS` (`Docs/`)
-- GitHub Actions workflow that builds, creates a GitHub Release, and optionally publishes to the PowerShell Gallery on every version tag push (`.github/workflows/publish.yml`)
+- **Build** — `Invoke-Build` pipeline (`template.build.ps1`) + `ModuleBuilder` packaging
+- **Test** — Pester 5 (`Tests/`)
+- **Docs** — Markdown help generated with `platyPS` (`Docs/`)
+- **Publish** — GitHub Actions workflow that creates a GitHub Release, and optionally publishes to the PowerShell Gallery, on every version tag
 
 ---
 
-## Getting started
+## Quick start: local (no GitHub needed)
 
-### 1. Rename the module
+Paste this into PowerShell to create a ready-to-build module on your Desktop:
 
-Rename `Source/NewModule.psm1` and `Source/NewModule.psd1` to your module name, then update the manifest (`Source/YourModule.psd1`):
-
-- `RootModule` — match the `.psm1` filename
-- `ModuleVersion`, `GUID`, `Author`, `CompanyName`, `Description`
-- `Tags`, `ProjectUri`, `LicenseUri`
-- `FunctionsToExport` / `CmdletsToExport` / `AliasesToExport`
-
-### 2. Replace `MODULE_NAME` in the workflow
-
-Open `.github/workflows/publish.yml` and replace both occurrences of `MODULE_NAME` with your module name:
-
-```yaml
-Compress-Archive -Path .\Output\YourModule ...
-Publish-Module   -Path .\Output\YourModule ...
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/dan-metzler/PSNewModule/main/New-PSModuleProject.ps1'))) -Name MyModule
 ```
 
-### 3. Install dev dependencies
+The script downloads this template, copies it to `Desktop\MyModule`, and renames everything for your module: files, manifest (new GUID, author, description), tests, docs, and the publish workflow.
+
+| Parameter | Default | Purpose |
+|---|---|---|
+| `-Name` | *(required)* | Module name |
+| `-Path` | Desktop | Parent folder for the project |
+| `-Author` | `$env:USERNAME` | Manifest author |
+| `-Description` | `<Name> PowerShell module.` | Manifest description |
+| `-InstallRequirements` | off | Install build dependencies |
+| `-GitInit` | off | `git init` and create an initial commit |
+
+Then build it:
+
+```powershell
+cd ~\Desktop\MyModule
+.\Install-Requirements.ps1          # skip if you used -InstallRequirements
+.\template.build.ps1 -Type Full
+```
+
+When you're ready to put it on GitHub, see [Moving a local project to GitHub](#moving-a-local-project-to-github).
+
+> Already cloned or downloaded this repo? Run `.\New-PSModuleProject.ps1 -Name MyModule` from it instead. It uses your local copy.
+
+---
+
+## Quick start: GitHub template
+
+1. Click **Use this template** on GitHub and clone your new repo.
+2. Rename `Source/NewModule.psd1`, `Source/NewModule.psm1`, and `Tests/NewModule.Tests.ps1` to your module name.
+3. In the manifest, update `RootModule` (match the `.psm1` name), `GUID` (`[guid]::NewGuid()`), `Author`, `CompanyName`, `Description`, and optionally `Tags`, `ProjectUri`, `LicenseUri`.
+4. In `.github/workflows/publish.yml`, replace every `YOUR_MODULE_NAME` with your module name.
+
+---
+
+## Build and test
+
+Install dev dependencies (run once):
 
 ```powershell
 .\Install-Requirements.ps1
 ```
 
-Installs required modules using min/max version ranges:
+| Module | Version range |
+|---|---|
+| `ModuleBuilder` | 3.1.8 – 4.x |
+| `Pester` | 5.7.0 – 5.x |
+| `InvokeBuild` | 5.14.23 – 6.x |
+| `platyPS` | 0.14.2 – 1.x |
 
-- `ModuleBuilder` (3.1.8 - 4.x)
-- `Pester` (5.7.0 - 6.x)
-- `InvokeBuild` (5.14.23 - 6.x)
-- `platyPS` (0.14.2 - 1.x)
-
----
-
-## Build pipeline
-
-Run Local build (compile + import + docs):
+Build:
 
 ```powershell
-.\template.build.ps1 -Type Local
+.\template.build.ps1 -Type Local   # compile, import, regenerate Docs/
+.\template.build.ps1 -Type Full    # compile, import, run Pester tests
 ```
 
-Run Full pipeline (compile + import + tests):
+Run a single task:
 
 ```powershell
-.\template.build.ps1 -Type Full
+Invoke-Build -Task BuildModule -Type Local
+Invoke-Build -Task RunTests -Type Full
+Invoke-Build -Task GenerateMarkdownDocs -Type Local
 ```
 
-Run an individual task:
-
-```powershell
-Invoke-Build -Task BuildModule
-Invoke-Build -Task RunTests
-Invoke-Build -Task GenerateMarkdownDocs
-```
+Tests run against the built module in `Output/`, not `Source/`, so build before you run tests by hand.
 
 ---
 
 ## Folder layout
 
-- `Source/` — module source (`.psm1`, `.psd1`, `Public/`, `Private/`)
-- `Output/` — built artifact (git-ignored)
-- `Tests/` — Pester tests
-- `Docs/` — generated markdown help
+| Path | Contents |
+|---|---|
+| `Source/` | Module source: `.psd1`, `.psm1`, `Public/` (exported), `Private/` (internal) |
+| `Tests/Unit/` | Pester tests (`*.Tests.ps1`) |
+| `Docs/` | Generated markdown help, one file per exported function |
+| `Output/` | Built module (git-ignored) |
+
+Add a function by creating `Source/Public/Verb-Noun.ps1`. `ModuleBuilder` exports everything in `Public/` automatically.
+
+---
+
+## Moving a local project to GitHub
+
+Create an empty repo on GitHub (no README or license), then:
+
+```powershell
+git init -b main            # skip if you used -GitInit
+git add .
+git commit -m "[chore] initial commit"
+git remote add origin https://github.com/<you>/<repo>.git
+git push -u origin main
+```
+
+Or, with the GitHub CLI: `gh repo create <repo> --private --source . --push`.
 
 ---
 
 ## Publishing
 
-### PowerShell Gallery
+Pushing a version tag (`v1.2.3`) triggers `.github/workflows/publish.yml`, which:
 
-The publish workflow fires automatically when a version tag is pushed. To enable Gallery publishing:
+1. Installs dependencies and runs the Full build, using the tag as the module version
+2. Zips `Output/<ModuleName>` and attaches it to a new GitHub Release with auto-generated notes
+3. Publishes to the PowerShell Gallery, but only if the `PSGALLERY_API_KEY` secret is set
 
-1. Generate an API key at [powershellgallery.com](https://www.powershellgallery.com)
-2. Add it as a repository secret named `PSGALLERY_API_KEY` in **GitHub > Settings > Secrets and variables > Actions**
+### Enable PowerShell Gallery publishing
 
-If `PSGALLERY_API_KEY` is not set the workflow still runs — it builds, tests, and creates the GitHub Release, but skips the Gallery publish step.
+1. Create an API key at [powershellgallery.com](https://www.powershellgallery.com).
+2. Add it as a repository secret named `PSGALLERY_API_KEY` under **Settings › Secrets and variables › Actions**.
 
-### Push a new release
+### Release a version
 
 ```powershell
-# Commit and push your changes first
-git add .
-git commit -m "[feat] add my new feature"
 git push origin main
-
-# Tag the release — this triggers the publish workflow **NOTE** Make sure you are updating your versioning
-git tag -a v1.1.0 -m "Release v1.0.0"
+git tag -a v1.1.0 -m "Release v1.1.0"
 git push origin v1.1.0
 ```
 
-Pushing the tag triggers `.github/workflows/publish.yml`, which:
+### Re-run a release
 
-1. Installs dependencies
-2. Runs the full build pipeline (the tag version number is extracted and passed in as `-Version`)
-3. Zips the `Output/<ModuleName>` folder
-4. Creates a GitHub Release with auto-generated release notes and the zip attached
-5. Publishes to the PowerShell Gallery (if `PSGALLERY_API_KEY` is set)
-
-### Re-tag an existing version
-
-If you need to re-run a release after fixing something:
+Delete the tag locally and on the remote, then re-create it:
 
 ```powershell
-# Delete the tag locally and on remote, then re-create it
-git tag -d v1.0.1
-git push origin :refs/tags/v1.0.1
-git tag -a v1.0.1 -m "Release v1.0.1"
-git push origin v1.0.1
+git tag -d v1.1.0
+git push origin :refs/tags/v1.1.0
+git tag -a v1.1.0 -m "Release v1.1.0"
+git push origin v1.1.0
 ```
-
----
-
-## Notes
-
-- Tests import the built module from `Output/`, not `Source/` — always run a build before running tests.
-- Markdown help generation depends on `ModuleImport` so the module name is available at doc-gen time.
