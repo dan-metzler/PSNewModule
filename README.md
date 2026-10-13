@@ -11,13 +11,16 @@ A minimal PowerShell module template (PowerShell 5.1+) with build, test, docs, a
 
 ## Quick start: local (no GitHub needed)
 
-Paste this into PowerShell to create a ready-to-build module on your Desktop:
+Load the `New-PSModuleProject` function, then run it to create a ready-to-build module on your Desktop:
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/dan-metzler/PSNewModule/main/New-PSModuleProject.ps1'))) -Name MyModule
+Invoke-RestMethod 'https://raw.githubusercontent.com/dan-metzler/PSNewModule/main/New-PSModuleProject.ps1' | Invoke-Expression
+New-PSModuleProject -Name MyModule
 ```
 
-The script downloads this template, copies it to `Desktop\MyModule`, and renames everything for your module: files, manifest (new GUID, author, description), tests, docs, and the publish workflow.
+Prefer to read it first? Open [`New-PSModuleProject.ps1`](New-PSModuleProject.ps1), copy the whole file, paste it into PowerShell, then run `New-PSModuleProject -Name MyModule`.
+
+The function downloads this template, copies it to `Desktop\MyModule`, and renames everything for your module: files, manifest (new GUID, author, description), tests, docs, and the publish workflow.
 
 | Parameter | Default | Purpose |
 |---|---|---|
@@ -38,7 +41,7 @@ cd ~\Desktop\MyModule
 
 When you're ready to put it on GitHub, see [Moving a local project to GitHub](#moving-a-local-project-to-github).
 
-> Already cloned or downloaded this repo? Run `.\New-PSModuleProject.ps1 -Name MyModule` from it instead. It uses your local copy.
+> Already cloned or downloaded this repo? Run `.\New-PSModuleProject.ps1 -Name MyModule` from it instead. It uses your local copy. Run `Get-Help New-PSModuleProject -Full` after loading the function for full help.
 
 ---
 
